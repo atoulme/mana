@@ -348,5 +348,54 @@ defmodule MerklePatriciaTree.TrieTest do
       # next, assert tree is well formed
       assert Verifier.verify_trie(trie, values) == :ok
     end
+
+    test "creates 2 tries with the same key-value pairs but different insertion order", %{db: db} do
+      key_value_pairs = [
+        {"elixir", "erlang"},
+        {"kotlin", "java"},
+        {"purescript", "javascript"},
+        {"rust", "c++"},
+        {"ruby", "crystal"}
+      ]
+
+      trie1 =
+        Enum.reduce(key_value_pairs, Trie.new(db), fn {lang1, lang2}, trie_acc ->
+          Trie.update(trie_acc, lang1, lang2)
+        end)
+
+      trie2 =
+        key_value_pairs
+        |> Enum.reverse()
+        |> Enum.reduce(Trie.new(db), fn {lang1, lang2}, trie_acc ->
+          Trie.update(trie_acc, lang1, lang2)
+        end)
+
+      trie3 =
+        key_value_pairs
+        |> Enum.shuffle()
+        |> Enum.reduce(Trie.new(db), fn {lang1, lang2}, trie_acc ->
+          Trie.update(trie_acc, lang1, lang2)
+        end)
+
+      assert trie1.root_hash == trie2.root_hash
+      assert trie1.root_hash == trie3.root_hash
+    end
+
+    test "reads trie data from one trie saving to another trie", %{db: db} do
+      key_value_pairs = [
+        {"elixir", "erlang"},
+        {"kotlin", "java"},
+        {"purescript", "javascript"},
+        {"rust", "c++"},
+        {"ruby", "crystal"}
+      ]
+
+      source_trie =
+        Enum.reduce(key_value_pairs, Trie.new(db), fn {lang1, lang2}, trie_acc ->
+          Trie.update(trie_acc, lang1, lang2)
+        end)
+
+      dest_trie = Trie.new(db)
+    end
   end
 end
